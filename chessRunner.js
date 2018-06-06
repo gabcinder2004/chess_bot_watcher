@@ -2,7 +2,7 @@ const request = require('request');
 const moment = require('moment');
 
 var javy = { name: 'javys bot', url: 'http://localhost:8000/move' }; // Javy
-var gab = { name: 'gabs bot', url: 'http://localhost:3000/v1/chess' }; // Gab
+var gab = { name: 'gabs bot ', url: 'http://localhost:3000/v1/chess' }; // Gab
 
 var middleman = 'http://localhost:3001/api';
 
@@ -46,7 +46,6 @@ const getMoveFromBot = gameInfo => {
     var endTime = moment();
     var duration = moment.duration(endTime.diff(startTime)).asSeconds();
 
-    console.log(`[${currentTurn.name}] Move Duration: ${duration} seconds`);
 
     var move = '';
     if (body.move != null) {
@@ -54,6 +53,8 @@ const getMoveFromBot = gameInfo => {
     } else {
       move = body;
     }
+
+    console.log(`[${currentTurn.name}] ${move} : ${duration} seconds`);
 
     currentTurn = currentTurn === whiteBot ? blackBot : whiteBot;
 
