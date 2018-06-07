@@ -1,10 +1,10 @@
 const request = require('request');
 const moment = require('moment');
 
-var javy = { name: 'javys bot', url: 'http://localhost:8000/move' }; // Javy
-var gab = { name: 'gabs bot ', url: 'http://localhost:3000/v1/chess' }; // Gab
+var javy = { name: 'javys bot', url: 'http://localhost:8000/movev3' }; // Javy
+var gab = { name: 'gabs bot ', url: 'http://localhost:8000/move3' }; // Gab
 
-var middleman = 'http://localhost:3001/api';
+var middleman = 'http://localhost:5000/api';
 
 var board1 = ChessBoard('board1', 'start');
 const randomNumber = Math.random() * 100;
@@ -35,7 +35,8 @@ const getMoveFromBot = gameInfo => {
     url: currentTurn.url,
     method: 'POST',
     body: { Fen: gameInfo.fen },
-    json: true
+    json: true,
+    timeout: 300000
   };
 
   var startTime = moment();
@@ -50,7 +51,11 @@ const getMoveFromBot = gameInfo => {
     var move = '';
     if (body.move != null) {
       move = body.move;
-    } else {
+    }
+    else if (body.Move != null){
+      move = body.Move
+    }
+    else{
       move = body;
     }
 
@@ -67,7 +72,8 @@ const verifyMoveWithMiddleMan = (move, gameInfo) => {
     url: `${middleman}/executemove/${gameInfo.gameId}`,
     method: 'POST',
     body: { move: move },
-    json: true
+    json: true,
+    timeout: 300000
   };
 
   request(options, (err, response, body) => {
@@ -76,15 +82,30 @@ const verifyMoveWithMiddleMan = (move, gameInfo) => {
     }
 
     var statusCode = response.statusCode;
-    var fen = body.data.message.fen;
-
-    if (statusCode === 200 && fen) {
-      board1.move(move);
-      getMoveFromBot({ fen: fen, gameId: gameInfo.gameId });
-    } else {
-      throw new Error('Something went wrong with middleman: ' + statusCode);
-    }
-  });
+    let fen = ""
+    if(body.data){
+      fen = body.data.message.fen;
+      if (statusCode === 200 && fen) {
+        board1.move(move);
+        getMoveFromBot({ fen: fen, gameId: gameInfo.gameId });
+      } else {
+        throw new Error('Something went wrong with middleman: ' + statusCode);
+      }
+    }else{
+      request(options, (err, response, body) => {
+        if (err) {
+          throw err;
+        }
+        statusCode = response.statusCode;
+        fen = body.data.message.fen;
+        if (statusCode === 200 && fen) {
+          board1.move(move);
+          getMoveFromBot({ fen: fen, gameId: gameInfo.gameId });
+        } else {
+          throw new Error('Something went wrong with middleman: ' + statusCode);
+        }
+    })
+  }});
 };
 
 const initializeGame = () => {
